@@ -11,10 +11,11 @@ app.use(express.static("public")); // serve frontend files
 
 // ✅ Use environment variables for MySQL (Render safe)
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "subhash@123",
-  database: process.env.DB_NAME || "studentdb",
+  host: "sql12.freesqldatabase.com",
+  user: "sql12803832",
+  password: "mw4l87x7dl",
+  database: "sql12803832",
+  port: 3306
 });
 
 // ✅ All routes (same as before)
