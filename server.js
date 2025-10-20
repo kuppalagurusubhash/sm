@@ -2,21 +2,22 @@ const express = require("express");
 const mysql = require("mysql2/promise");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("public")); // Serve frontend files
+app.use(express.static("public")); // serve frontend files
 
-// 🧩 MySQL connection credentials
+// ✅ Use environment variables for MySQL (Render safe)
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "subhash@123", // ✅ change to your MySQL password
-  database: "studentdb",
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASS || "subhash@123",
+  database: process.env.DB_NAME || "studentdb",
 });
 
-// ✅ Fetch all students
+// ✅ All routes (same as before)
 app.get("/api/students", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM students ORDER BY id DESC");
@@ -26,7 +27,6 @@ app.get("/api/students", async (req, res) => {
   }
 });
 
-// ✅ Fetch student by ID
 app.get("/api/students/:id", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM students WHERE id = ?", [req.params.id]);
@@ -37,30 +37,20 @@ app.get("/api/students/:id", async (req, res) => {
   }
 });
 
-// ✅ 🔍 Fetch student by SRN (case-insensitive + trim for spaces)
 app.get("/api/students/srn/:srn", async (req, res) => {
   try {
-    const inputSRN = req.params.srn.trim(); // Remove leading/trailing spaces
-    console.log("🔍 Searching for SRN:", inputSRN); // Debug log
-
+    const inputSRN = req.params.srn.trim();
     const [rows] = await pool.query(
       "SELECT * FROM students WHERE TRIM(LOWER(srn)) = LOWER(?)",
       [inputSRN]
     );
-
-    if (rows.length === 0) {
-      console.log("❌ No record found for SRN:", inputSRN);
-      return res.status(404).json({ error: "SRN not found" });
-    }
-
-    console.log("✅ Student found:", rows[0]);
+    if (rows.length === 0) return res.status(404).json({ error: "SRN not found" });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Add new student
 app.post("/api/students", async (req, res) => {
   const { srn, name, age, dept, email } = req.body;
   try {
@@ -74,7 +64,6 @@ app.post("/api/students", async (req, res) => {
   }
 });
 
-// ✅ Update student by ID
 app.put("/api/students/:id", async (req, res) => {
   const { srn, name, age, dept, email } = req.body;
   const { id } = req.params;
@@ -89,7 +78,6 @@ app.put("/api/students/:id", async (req, res) => {
   }
 });
 
-// ✅ Delete student
 app.delete("/api/students/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -100,5 +88,6 @@ app.delete("/api/students/:id", async (req, res) => {
   }
 });
 
-// ✅ Start server
-app.listen(3000, () => console.log("✅ Server running on http://localhost:3000"));
+// ✅ Important: Use process.env.PORT (Render gives this)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
