@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Management Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 min-h-screen text-gray-800">
+
+  <!-- Navbar -->
+  <header class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white py-5 shadow-xl">
+    <h1 class="text-3xl font-extrabold text-center tracking-wide drop-shadow-lg">
+      🎓 Student Management System
+    </h1>
+  </header>
+
+  <main class="max-w-6xl mx-auto mt-10 p-8 rounded-2xl shadow-2xl bg-white/70 backdrop-blur-md border border-white/30">
+
+    <!-- Search Section -->
+    <div class="mb-8 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <input type="text" id="searchSRN" placeholder="🔎 Enter SRN to search"
+             class="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-3/4 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/80 backdrop-blur-sm transition">
+      <button onclick="searchBySRN()"
+              class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition">
+        Search
+      </button>
+    </div>
+
+    <!-- Student Form -->
+    <form id="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10 bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-md border border-gray-200">
+      <input type="hidden" id="id">
+
+      <input type="text" id="srn" placeholder="SRN" required
+             class="border rounded-md p-2 focus:ring-2 focus:ring-indigo-400 bg-white/90">
+      <input type="text" id="name" placeholder="Name" required
+             class="border rounded-md p-2 focus:ring-2 focus:ring-indigo-400 bg-white/90">
+      <input type="number" id="age" placeholder="Age"
+             class="border rounded-md p-2 focus:ring-2 focus:ring-indigo-400 bg-white/90">
+      <input type="text" id="dept" placeholder="Department"
+             class="border rounded-md p-2 focus:ring-2 focus:ring-indigo-400 bg-white/90">
+      <input type="email" id="email" placeholder="Email"
+             class="border rounded-md p-2 focus:ring-2 focus:ring-indigo-400 bg-white/90 col-span-1 sm:col-span-2">
+
+      <div class="flex flex-wrap gap-3 col-span-full justify-end mt-3">
+        <button type="submit"
+                class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition">
+          💾 Save
+        </button>
+        <button type="button" onclick="resetForm()"
+                class="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white px-8 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition">
+          🔄 Reset
+        </button>
+      </div>
+    </form>
+
+    <!-- Table -->
+    <div class="overflow-x-auto shadow-lg rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-md">
+      <table class="min-w-full text-sm text-left">
+        <thead class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white">
+          <tr>
+            <th class="py-3 px-5">SRN</th>
+            <th class="py-3 px-5">Name</th>
+            <th class="py-3 px-5">Age</th>
+            <th class="py-3 px-5">Dept</th>
+            <th class="py-3 px-5">Email</th>
+            <th class="py-3 px-5 text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody id="table" class="divide-y divide-gray-100 bg-white/80">
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- JavaScript -->
+  <script>
+    const form = document.getElementById("form");
+    const table = document.getElementById("table");
+    const idEl = document.getElementById("id");
+    const srnEl = document.getElementById("srn");
+    const nameEl = document.getElementById("name");
+    const ageEl = document.getElementById("age");
+    const deptEl = document.getElementById("dept");
+    const emailEl = document.getElementById("email");
+
+    async function load() {
+      const res = await fetch("/api/students");
+      const data = await res.json();
+      table.innerHTML = data.map(s => `
+        <tr class="hover:bg-purple-50 transition">
+          <td class="py-3 px-5">${s.srn}</td>
+          <td class="py-3 px-5">${s.name}</td>
+          <td class="py-3 px-5">${s.age || ""}</td>
+          <td class="py-3 px-5">${s.dept || ""}</td>
+          <td class="py-3 px-5">${s.email || ""}</td>
+          <td class="py-3 px-5 text-center">
+            <button onclick="edit(${s.id}, '${s.srn}', '${s.name}', '${s.age}', '${s.dept}', '${s.email}')"
+                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md shadow-sm mr-2 transition">✏️</button>
+            <button onclick="del(${s.id})"
+                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md shadow-sm transition">🗑</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    async function searchBySRN() {
+      const srn = document.getElementById("searchSRN").value.trim();
+      if (!srn) return alert("Please enter SRN to search");
+      try {
+        const res = await fetch(`/api/students/srn/${srn}`);
+        if (!res.ok) throw new Error("SRN not found");
+        const s = await res.json();
+        idEl.value = s.id;
+        srnEl.value = s.srn;
+        nameEl.value = s.name;
+        ageEl.value = s.age || "";
+        deptEl.value = s.dept || "";
+        emailEl.value = s.email || "";
+        alert("✅ Student found and form filled!");
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const student = {
+        srn: srnEl.value,
+        name: nameEl.value,
+        age: ageEl.value,
+        dept: deptEl.value,
+        email: emailEl.value
+      };
+      const method = idEl.value ? "PUT" : "POST";
+      const url = idEl.value ? "/api/students/" + idEl.value : "/api/students";
+      await fetch(url, {
+        method,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(student)
+      });
+      form.reset(); idEl.value = "";
+      load();
+    };
+
+    function resetForm() {
+      form.reset(); idEl.value = "";
+    }
+
+    function edit(id, srn, name, age, dept, email) {
+      idEl.value = id;
+      srnEl.value = srn;
+      nameEl.value = name;
+      ageEl.value = age;
+      deptEl.value = dept;
+      emailEl.value = email;
+      window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    async function del(id) {
+      if (confirm("Are you sure you want to delete this record?")) {
+        await fetch("/api/students/" + id, {method: "DELETE"});
+        load();
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
